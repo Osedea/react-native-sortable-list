@@ -4,7 +4,6 @@ import {ScrollView, View, StyleSheet, Platform, RefreshControl, ViewPropTypes} f
 import {shallowEqual, swapArrayElements} from './utils';
 import Row from './Row';
 
-const AUTOSCROLL_INTERVAL = 100;
 const ZINDEX = Platform.OS === 'ios' ? 'zIndex' : 'elevation';
 
 function uniqueRowKey(key) {
@@ -470,85 +469,10 @@ export default class SortableList extends Component {
     if (this._autoScrollInterval !== null) {
       return;
     }
-
-    if (inAutoScrollBeginArea) {
-      this._startAutoScroll({
-        direction: -1,
-        shouldScroll: () => this._contentOffset[horizontal ? 'x' : 'y'] > 0,
-        getScrollStep: (stepIndex) => {
-          const nextStep = this._getScrollStep(stepIndex);
-          const contentOffset = this._contentOffset[horizontal ? 'x' : 'y'];
-
-          return contentOffset - nextStep < 0 ? contentOffset : nextStep;
-        },
-      });
-    } else if (inAutoScrollEndArea) {
-      this._startAutoScroll({
-        direction: 1,
-        shouldScroll: () => {
-          const {
-            contentHeight,
-            contentWidth,
-            containerLayout,
-            footerLayout = {height: 0},
-          } = this.state;
-
-          if (horizontal) {
-            return this._contentOffset.x < contentWidth - containerLayout.width
-          } else {
-            return this._contentOffset.y < contentHeight + footerLayout.height - containerLayout.height;
-          }
-        },
-        getScrollStep: (stepIndex) => {
-          const nextStep = this._getScrollStep(stepIndex);
-          const {
-            contentHeight,
-            contentWidth,
-            containerLayout,
-            footerLayout = {height: 0},
-          } = this.state;
-
-          if (horizontal) {
-            return this._contentOffset.x + nextStep > contentWidth - containerLayout.width
-              ? contentWidth - containerLayout.width - this._contentOffset.x
-              : nextStep;
-          } else {
-            const scrollHeight = contentHeight + footerLayout.height - containerLayout.height;
-
-            return this._contentOffset.y + nextStep > scrollHeight
-              ? scrollHeight - this._contentOffset.y
-              : nextStep;
-          }
-        },
-      });
-    }
   }
 
   _getScrollStep(stepIndex) {
     return stepIndex > 3 ? 60 : 30;
-  }
-
-  _startAutoScroll({direction, shouldScroll, getScrollStep}) {
-    if (!shouldScroll()) {
-      return;
-    }
-
-    const {activeRowKey} = this.state;
-    const {horizontal} = this.props;
-    let counter = 0;
-
-    this._autoScrollInterval = setInterval(() => {
-      if (shouldScroll()) {
-        const movement = {
-          [horizontal ? 'dx' : 'dy']: direction * getScrollStep(counter++),
-        };
-
-        this.scrollBy(movement);
-        this._rows[activeRowKey].moveBy(movement);
-      } else {
-        this._stopAutoScroll();
-      }
-    }, AUTOSCROLL_INTERVAL);
   }
 
   _stopAutoScroll() {
